@@ -10,6 +10,11 @@
 #   docker compose run --rm fast make test
 #   docker compose run --rm fast make clean
 #   docker compose run --rm fast make update
+#
+# NOTE: Uses local ./data/ directory (bind mount) so you can:
+#   - Manually place downloaded files in ./data/
+#   - Share data between native and Docker builds
+#   - Inspect generated files directly
 
 services:
   fast:
@@ -18,8 +23,8 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      # Persist downloaded data and database between container restarts
-      - fast-data:/app/data
+      # Bind mount local data directory (shared with native build)
+      - ./data:/app/data
       # Mount metadata for live editing (remove :ro to allow edits)
       - ./fast.metadata.json:/app/fast.metadata.json:ro
     environment:
@@ -41,7 +46,3 @@ services:
         fi
         exec make serve DOCKER=1 PUBLIC=1
       "
-
-volumes:
-  fast-data:
-    name: fast-reconcile-data
