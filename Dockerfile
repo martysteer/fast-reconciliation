@@ -27,8 +27,8 @@ RUN mkdir -p /opt/saxon && \
     unzip -j /tmp/saxon.zip "*.jar" -d /opt/saxon && \
     rm /tmp/saxon.zip
 
-# Create Saxon wrapper script (includes all jars in classpath)
-RUN echo '#!/bin/bash\njava -Xmx8g -cp "/opt/saxon/*" net.sf.saxon.Transform "$@"' > /usr/local/bin/saxon && \
+# Create Saxon wrapper script (only include required jars)
+RUN echo '#!/bin/bash\njava -Xmx8g -cp "/opt/saxon/saxon-he-12.5.jar:/opt/saxon/xmlresolver-5.2.2.jar:/opt/saxon/xmlresolver-5.2.2-data.jar" net.sf.saxon.Transform "$@"' > /usr/local/bin/saxon && \
     chmod +x /usr/local/bin/saxon
 
 # Install Python tools for database building
