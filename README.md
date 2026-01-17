@@ -54,6 +54,30 @@ The service will be available at:
 http://127.0.0.1:8001/fast/FAST/-/reconcile
 ```
 
+### Option 3: Hybrid (Build Native, Serve via Docker)
+
+The XSLT transformation of large files (especially FASTPersonal.marcxml at 1.7GB) requires significant memory. Docker containers may have insufficient memory allocation, causing truncated output files and build failures.
+
+**Recommended workflow for reliability:**
+
+1. **Build the database natively** (macOS/Linux can dynamically allocate memory):
+   ```bash
+   make build                # Full pipeline with native Saxon
+   ```
+
+2. **Serve via Docker** for network deployment:
+   ```bash
+   docker compose up -d      # Uses the same ./data/ directory
+   ```
+
+Both native and Docker builds share the `./data/` directory, so you can:
+- Build once natively where memory is plentiful
+- Serve via Docker for consistent deployment across machines
+- Skip the lengthy transformation on subsequent Docker deployments
+
+**If you must build entirely in Docker**, increase Docker Desktop memory allocation:
+- Docker Desktop → Settings → Resources → Memory → **12-16GB**
+
 ## Using with OpenRefine
 
 1. Column dropdown → **Reconcile** → **Start reconciling...**
