@@ -202,18 +202,24 @@ clean:
 	@rm -f $(SQLITE_DB)
 	@echo "✓ Done. Run 'make build' to rebuild."
 
+.PHONY: clean-csv
+clean-csv:
+	@echo "Removing database and CSV files (keeping SKOS)..."
+	@rm -f $(SQLITE_DB)
+	@rm -rf $(CSV_DIR)
+	@echo "✓ Done. SKOS files preserved in $(SKOS_DIR)/"
+
 .PHONY: clean-data
 clean-data:
-	@echo "Removing derived data files (keeping venv and downloads)..."
+	@echo "Removing all derived data (keeping source zip and SKOS)..."
 	@rm -f $(SQLITE_DB)
-	@rm -rf $(SKOS_DIR)
 	@rm -rf $(CSV_DIR)
 	@rm -f $(MARCXML_DIR)/.extracted
-	@echo "✓ Data files removed."
+	@echo "✓ Data files removed. SKOS files preserved in $(SKOS_DIR)/"
 
 .PHONY: clean-all
 clean-all:
-	@echo "Removing all generated files..."
+	@echo "Removing ALL generated files (including SKOS)..."
 	@rm -rf $(DATA_DIR) $(VENV_DIR) .python-version
 	@echo "✓ All files removed."
 
@@ -318,8 +324,8 @@ $(CSV_DIR):
 # =============================================================================
 # Pipeline: MARC XML → SKOS
 # =============================================================================
-.PHONY: skos
-skos: $(VENV_DONE) $(MARCXML_DIR)/.extracted | $(SKOS_DIR)
+# Sentinel file tracks when SKOS conversion is complete
+$(SKOS_DIR)/.done: $(VENV_DONE) $(MARCXML_DIR)/.extracted $(MARCXML_TO_SKOS) | $(SKOS_DIR)
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo "Converting MARC XML → SKOS"
 	@echo "═══════════════════════════════════════════════════════════════"
@@ -332,13 +338,18 @@ skos: $(VENV_DONE) $(MARCXML_DIR)/.extracted | $(SKOS_DIR)
 			$(SAXON) -s:"$$marcxml" -xsl:$(MARCXML_TO_SKOS) -o:"$$skosxml" facetType="$$facet"; \
 		fi; \
 	done
+	@touch $@
 	@echo "✓ SKOS conversion complete"
+
+# Manual target for running SKOS conversion
+.PHONY: skos
+skos: $(SKOS_DIR)/.done
 
 # =============================================================================
 # Pipeline: SKOS → CSV
 # =============================================================================
-.PHONY: csv
-csv: skos | $(CSV_DIR)
+# Sentinel file tracks when CSV conversion is complete
+$(CSV_DIR)/.done: $(SKOS_DIR)/.done $(SKOS_TO_CSV) | $(CSV_DIR)
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo "Converting SKOS → CSV"
 	@echo "═══════════════════════════════════════════════════════════════"
@@ -351,12 +362,17 @@ csv: skos | $(CSV_DIR)
 			$(SAXON) -s:"$$skosxml" -xsl:$(SKOS_TO_CSV) -o:"$$csvfile" facetType="$$facet"; \
 		fi; \
 	done
+	@touch $@
 	@echo "✓ CSV conversion complete"
+
+# Manual target for running CSV conversion
+.PHONY: csv
+csv: $(CSV_DIR)/.done
 
 # =============================================================================
 # Pipeline: CSV → SQLite Database
 # =============================================================================
-$(SQLITE_DB): csv
+$(SQLITE_DB): $(CSV_DIR)/.done
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo "Building SQLite database with FTS indexes"
 	@echo "═══════════════════════════════════════════════════════════════"
@@ -430,7 +446,9 @@ help:
 	@echo "  make status     Show file status and database statistics"
 	@echo "  make update     Re-download source data and rebuild"
 	@echo "  make clean      Remove database only"
-	@echo "  make clean-all  Remove everything including downloads and venv"
+	@echo "  make clean-csv  Remove database + CSV (keeps SKOS)"
+	@echo "  make clean-data Remove database + CSV + extracted MARC (keeps SKOS + zip)"
+	@echo "  make clean-all  Remove everything including SKOS, downloads, and venv"
 	@echo "  make venv       Create Python virtual environment only"
 	@echo ""
 	@echo "Pipeline stages (for manual control):"
