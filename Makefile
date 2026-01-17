@@ -60,7 +60,8 @@ ifdef DOCKER
   DATASETTE := datasette
   SQLITE_UTILS := sqlite-utils
   VENV_DONE :=
-  SAXON := java -Xmx8g -jar /opt/saxon/saxon-he.jar
+  # Use saxon wrapper script (includes xmlresolver jars in classpath)
+  SAXON ?= saxon
 else
   PYTHON := $(VENV_DIR)/bin/python3
   PIP := $(VENV_DIR)/bin/pip

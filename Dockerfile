@@ -25,8 +25,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /opt/saxon && \
     curl -sL -o /tmp/saxon.zip "https://github.com/Saxonica/Saxon-HE/releases/download/SaxonHE12-5/SaxonHE12-5J.zip" && \
     unzip -j /tmp/saxon.zip "*.jar" -d /opt/saxon && \
-    rm /tmp/saxon.zip && \
-    ln -s /opt/saxon/saxon-he-*.jar /opt/saxon/saxon-he.jar
+    rm /tmp/saxon.zip
+
+# Create Saxon wrapper script (includes all jars in classpath)
+RUN echo '#!/bin/bash\njava -Xmx8g -cp "/opt/saxon/*" net.sf.saxon.Transform "$@"' > /usr/local/bin/saxon && \
+    chmod +x /usr/local/bin/saxon
 
 # Install Python tools for database building
 RUN pip3 install --no-cache-dir sqlite-utils
@@ -43,7 +46,7 @@ RUN mkdir -p /app/data
 # Set environment for Docker build mode
 ENV DOCKER=1
 ENV DATA_DIR=/app/data
-ENV SAXON="java -Xmx8g -jar /opt/saxon/saxon-he.jar"
+ENV SAXON=saxon
 
 # =============================================================================
 # Stage 2: Runtime environment with Python/Datasette
@@ -64,6 +67,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy Saxon from builder
 COPY --from=builder /opt/saxon /opt/saxon
+COPY --from=builder /usr/local/bin/saxon /usr/local/bin/saxon
 
 # Install Python dependencies
 RUN pip install --no-cache-dir \
@@ -84,7 +88,7 @@ RUN mkdir -p /app/data
 # Environment configuration
 ENV DOCKER=1
 ENV DATA_DIR=/app/data
-ENV SAXON="java -Xmx8g -jar /opt/saxon/saxon-he.jar"
+ENV SAXON=saxon
 
 # Expose the datasette port
 EXPOSE 8001
