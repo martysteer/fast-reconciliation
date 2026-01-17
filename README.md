@@ -29,6 +29,26 @@ make build                  # Downloads data, creates venv, builds DB
 make serve                  # Start server
 ```
 
+### ⚠️ Cloudflare Download Issue
+
+OCLC uses Cloudflare protection which may block automated downloads. If `make build` fails with a download error:
+
+1. **Download manually** from your browser:
+   - https://researchworks.oclc.org/researchdata/fast/FASTAll.marcxml.zip (~198MB)
+
+2. **Save to**: `data/FASTAll.marcxml.zip`
+   ```bash
+   mkdir -p data
+   mv ~/Downloads/FASTAll.marcxml.zip data/
+   ```
+
+3. **Run build again** (native or Docker - both use the same `./data/` directory):
+   ```bash
+   make build                # Native
+   # or
+   docker compose up -d      # Docker
+   ```
+
 The service will be available at:
 ```
 http://127.0.0.1:8001/fast/FAST/-/reconcile

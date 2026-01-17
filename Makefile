@@ -259,11 +259,42 @@ $(DATA_DIR):
 
 $(FAST_ZIP): | $(DATA_DIR)
 	@echo "═══════════════════════════════════════════════════════════════"
-	@echo "Downloading FAST data from OCLC"
+	@echo "Downloading FAST data from OCLC (~198MB)"
 	@echo "═══════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "NOTE: OCLC uses Cloudflare protection which may block automated downloads."
+	@echo ""
+	@echo "Attempting download with browser-like headers..."
 	@echo "  URL: $(FAST_URL)"
-	@curl -L --progress-bar -o $@ "$(FAST_URL)"
-	@echo "  Downloaded: $$(du -h $@ | cut -f1)"
+	@curl -L --progress-bar \
+		-A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+		-H "Accept: application/zip,application/octet-stream,*/*" \
+		-H "Accept-Language: en-US,en;q=0.9" \
+		--compressed \
+		-o $@ "$(FAST_URL)" || true
+	@# Verify download is a valid zip file
+	@if [ ! -f $@ ] || ! unzip -t $@ >/dev/null 2>&1; then \
+		echo ""; \
+		echo "═══════════════════════════════════════════════════════════════"; \
+		echo "DOWNLOAD BLOCKED BY CLOUDFLARE"; \
+		echo "═══════════════════════════════════════════════════════════════"; \
+		echo ""; \
+		echo "The OCLC server blocked the automated download."; \
+		echo ""; \
+		echo "Please download manually:"; \
+		echo "  1. Open this URL in your browser:"; \
+		echo "     $(FAST_URL)"; \
+		echo ""; \
+		echo "  2. Save the file to:"; \
+		echo "     $(FAST_ZIP)"; \
+		echo ""; \
+		echo "  3. Then run 'make build' again."; \
+		echo ""; \
+		rm -f $@; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "✓ Downloaded: $$(du -h $@ | cut -f1)"
 
 .PHONY: extract
 extract: $(MARCXML_DIR)/.extracted
