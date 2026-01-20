@@ -222,42 +222,27 @@
         </skos:editorialNote>
     </xsl:template>
     
-    <!-- Build label from subfields -->
+    <!-- Build label from subfields - preserves original MARC punctuation -->
     <xsl:template name="buildLabel">
         <xsl:for-each select="mx:subfield[not(@code='w' or @code='0' or @code='2' or @code='4' or @code='5' or @code='6' or @code='8')]">
-            <!-- Strip trailing punctuation (comma, period, semicolon) from the value -->
-            <xsl:variable name="rawValue" select="normalize-space(.)"/>
-            <xsl:variable name="cleanValue">
-                <xsl:choose>
-                    <xsl:when test="substring($rawValue, string-length($rawValue)) = ','">
-                        <xsl:value-of select="substring($rawValue, 1, string-length($rawValue) - 1)"/>
-                    </xsl:when>
-                    <xsl:when test="substring($rawValue, string-length($rawValue)) = '.'">
-                        <xsl:value-of select="substring($rawValue, 1, string-length($rawValue) - 1)"/>
-                    </xsl:when>
-                    <xsl:when test="substring($rawValue, string-length($rawValue)) = ';'">
-                        <xsl:value-of select="substring($rawValue, 1, string-length($rawValue) - 1)"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:value-of select="$rawValue"/>
-                    </xsl:otherwise>
-                </xsl:choose>
-            </xsl:variable>
+            <xsl:variable name="value" select="normalize-space(.)"/>
             <xsl:choose>
                 <xsl:when test="position() = 1">
-                    <xsl:value-of select="$cleanValue"/>
+                    <xsl:value-of select="$value"/>
                 </xsl:when>
                 <xsl:when test="@code='v' or @code='x' or @code='y' or @code='z'">
+                    <!-- Subdivision separator without spaces, matching FAST display -->
                     <xsl:text>--</xsl:text>
-                    <xsl:value-of select="$cleanValue"/>
+                    <xsl:value-of select="$value"/>
                 </xsl:when>
                 <xsl:when test="@code='d'">
+                    <!-- Dates preceded by comma -->
                     <xsl:text>, </xsl:text>
-                    <xsl:value-of select="$cleanValue"/>
+                    <xsl:value-of select="$value"/>
                 </xsl:when>
                 <xsl:otherwise>
                     <xsl:text> </xsl:text>
-                    <xsl:value-of select="$cleanValue"/>
+                    <xsl:value-of select="$value"/>
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:for-each>
