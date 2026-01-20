@@ -222,10 +222,24 @@
         </skos:editorialNote>
     </xsl:template>
     
-    <!-- Build label from subfields - preserves original MARC punctuation -->
+    <!-- Build label from subfields - preserves internal MARC punctuation, strips trailing -->
     <xsl:template name="buildLabel">
-        <xsl:for-each select="mx:subfield[not(@code='w' or @code='0' or @code='2' or @code='4' or @code='5' or @code='6' or @code='8')]">
-            <xsl:variable name="value" select="normalize-space(.)"/>
+        <xsl:variable name="subfields" select="mx:subfield[not(@code='w' or @code='0' or @code='2' or @code='4' or @code='5' or @code='6' or @code='8')]"/>
+        <xsl:for-each select="$subfields">
+            <xsl:variable name="rawValue" select="normalize-space(.)"/>
+            <!-- Strip trailing punctuation only from the LAST subfield -->
+            <xsl:variable name="value">
+                <xsl:choose>
+                    <xsl:when test="position() = last()">
+                        <xsl:call-template name="stripTrailingPunct">
+                            <xsl:with-param name="text" select="$rawValue"/>
+                        </xsl:call-template>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="$rawValue"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:variable>
             <xsl:choose>
                 <xsl:when test="position() = 1">
                     <xsl:value-of select="$value"/>
@@ -236,8 +250,8 @@
                     <xsl:value-of select="$value"/>
                 </xsl:when>
                 <xsl:when test="@code='d'">
-                    <!-- Dates preceded by comma -->
-                    <xsl:text>, </xsl:text>
+                    <!-- Dates: just add space, MARC punctuation on preceding subfield provides comma -->
+                    <xsl:text> </xsl:text>
                     <xsl:value-of select="$value"/>
                 </xsl:when>
                 <xsl:otherwise>
@@ -246,6 +260,20 @@
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:for-each>
+    </xsl:template>
+    
+    <!-- Helper: strip trailing punctuation (period, comma, semicolon) -->
+    <xsl:template name="stripTrailingPunct">
+        <xsl:param name="text"/>
+        <xsl:variable name="lastChar" select="substring($text, string-length($text))"/>
+        <xsl:choose>
+            <xsl:when test="$lastChar = '.' or $lastChar = ',' or $lastChar = ';'">
+                <xsl:value-of select="substring($text, 1, string-length($text) - 1)"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="$text"/>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
     
 </xsl:stylesheet>
