@@ -262,12 +262,29 @@
         </xsl:for-each>
     </xsl:template>
     
-    <!-- Helper: strip trailing punctuation (period, comma, semicolon) -->
+    <!-- Helper: strip trailing punctuation, but preserve abbreviations -->
     <xsl:template name="stripTrailingPunct">
         <xsl:param name="text"/>
         <xsl:variable name="lastChar" select="substring($text, string-length($text))"/>
+        <xsl:variable name="lastTwo" select="substring($text, string-length($text) - 1)"/>
+        <xsl:variable name="lastThree" select="substring($text, string-length($text) - 2)"/>
+        <xsl:variable name="lastFour" select="substring($text, string-length($text) - 3)"/>
+        <xsl:variable name="lastFive" select="substring($text, string-length($text) - 4)"/>
         <xsl:choose>
-            <xsl:when test="$lastChar = '.' or $lastChar = ',' or $lastChar = ';'">
+            <!-- Keep trailing comma or semicolon only (always strip these) -->
+            <xsl:when test="$lastChar = ',' or $lastChar = ';'">
+                <xsl:value-of select="substring($text, 1, string-length($text) - 1)"/>
+            </xsl:when>
+            <!-- Preserve single-letter initials (A. B. C. etc.) -->
+            <xsl:when test="$lastChar = '.' and string-length($text) >= 2 and contains('ABCDEFGHIJKLMNOPQRSTUVWXYZ', substring($text, string-length($text) - 1, 1)) and (string-length($text) = 2 or substring($text, string-length($text) - 2, 1) = ' ')">
+                <xsl:value-of select="$text"/>
+            </xsl:when>
+            <!-- Preserve common abbreviations -->
+            <xsl:when test="$lastFour = 'etc.' or $lastThree = 'Jr.' or $lastThree = 'Sr.' or $lastFive = 'Dept.' or $lastFour = 'Inc.' or $lastFour = 'Ltd.' or $lastThree = 'Co.' or $lastFive = 'Corp.' or $lastFive = 'Bros.' or $lastFive = 'Assn.' or $lastThree = 'Dr.' or $lastThree = 'Mr.' or $lastFour = 'Mrs.' or $lastThree = 'Ms.' or $lastThree = 'St.' or $lastThree = 'Mt.' or $lastThree = 'Ft.' or $lastThree = 'ca.' or $lastThree = 'fl.' or $lastThree = 'vs.'">
+                <xsl:value-of select="$text"/>
+            </xsl:when>
+            <!-- Strip other trailing periods -->
+            <xsl:when test="$lastChar = '.'">
                 <xsl:value-of select="substring($text, 1, string-length($text) - 1)"/>
             </xsl:when>
             <xsl:otherwise>
